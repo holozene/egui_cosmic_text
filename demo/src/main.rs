@@ -188,16 +188,16 @@ impl App for DemoApp {
 
         CentralPanel::default()
             .frame(
-                Frame::none()
+                Frame::NONE
                     .fill(Color32::BLACK)
-                    .inner_margin(Margin::same(5.0)),
+                    .inner_margin(Margin::same(5)),
             )
             .show(ctx, |ui| {
                 ui.spacing_mut().scroll = ScrollStyle::solid();
 
                 ScrollArea::vertical().show(ui, |ui| {
                     Frame::side_top_panel(ui.style())
-                        .inner_margin(Margin::same(5.0))
+                        .inner_margin(Margin::same(5))
                         .show(ui, |ui| {
                             self.editor.set_font_size(
                                 self.font_size,
@@ -233,7 +233,7 @@ impl App for DemoApp {
 }
 
 fn app_creator() -> AppCreator<'static> {
-    let mut font_db = fontdb::Database::new();
+    let mut font_db = cosmic_text::fontdb::Database::new();
 
     let font_file = include_bytes!("../resources/Ubuntu-Light.ttf");
 
@@ -248,9 +248,10 @@ fn app_creator() -> AppCreator<'static> {
 
     let mut font_definitions = FontDefinitions::default();
 
-    font_definitions
-        .font_data
-        .insert("Ubuntu-Light".to_string(), Arc::from(FontData::from_static(font_file)));
+    font_definitions.font_data.insert(
+        "Ubuntu-Light".to_string(),
+        Arc::from(FontData::from_static(font_file)),
+    );
 
     font_definitions
         .families
@@ -310,7 +311,7 @@ fn app_creator() -> AppCreator<'static> {
                         .metrics(Metrics::new(20.0, 20.0 * 1.5))
                         .color(cosmic_text::Color::rgb(137, 207, 240)),
                 ),
-                ("text!", attrs)
+                ("text!", attrs),
             ],
             attrs,
             Shaping::Advanced,
@@ -336,11 +337,7 @@ fn app_creator() -> AppCreator<'static> {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
-    eframe::run_native(
-        "demo",
-        NativeOptions::default(),
-        app_creator(),
-    )
+    eframe::run_native("demo", NativeOptions::default(), app_creator())
 }
 
 #[cfg(target_arch = "wasm32")]

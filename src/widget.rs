@@ -1,20 +1,20 @@
-use std::hash::BuildHasher;
-use cosmic_text::{
-    Action, Attrs, Buffer, Change, Cursor, Edit, Editor, FontSystem, LayoutGlyph, Metrics, Motion,
-    Selection, Shaping, SwashCache,
-};
-use cosmic_undo_2::{ActionIter, Commands};
-use egui::{
-    pos2, vec2, Color32, ColorImage, CursorIcon, Event, EventFilter, Key, NumExt, Painter, Pos2,
-    Rect, Response, Sense, TextureHandle, TextureId, TextureOptions, Ui, Vec2,
-};
-
 use crate::atlas::TextureAtlas;
 use crate::cursor::LineSelection;
 use crate::draw::{draw_buf, draw_run};
 use crate::util::{
     cursor_rect, extra_width, measure_height, measure_width_and_height, selection_rect,
 };
+use cosmic_text::{
+    Action, Attrs, Buffer, Change, Cursor, Edit, Editor, FontSystem, LayoutGlyph, Metrics, Motion,
+    Selection, Shaping, SwashCache,
+};
+use cosmic_undo_2::{ActionIter, Commands};
+use egui::{
+    emath::GuiRounding, pos2, vec2, Color32, ColorImage, CursorIcon, Event, EventFilter, Key,
+    NumExt, Painter, Pos2, Rect, Response, Sense, TextureHandle, TextureId, TextureOptions, Ui,
+    Vec2,
+};
+use std::hash::BuildHasher;
 
 macro_rules! public_enum {
     (
@@ -546,7 +546,7 @@ pub struct CosmicEdit<L: LayoutMode> {
     scroll_state: ScrollState,
     dragging: bool,
     frame_changed: bool,
-    last_updated_time: f64
+    last_updated_time: f64,
 }
 
 // TODO: Docs
@@ -1031,8 +1031,7 @@ impl<L: LayoutMode> CosmicEdit<L> {
             return false;
         }
         if let Some(string) = self.editor.copy_selection() {
-            ui.output_mut(|x| x.copied_text = string);
-            return true;
+            ui.ctx().copy_text(string);
         }
         false
     }
@@ -1086,7 +1085,7 @@ impl<L: LayoutMode> CosmicEdit<L> {
         })
     }
 
-    pub fn editor(&self) -> &Editor {
+    pub fn editor(&self) -> &Editor<'static> {
         &self.editor
     }
 
@@ -1133,16 +1132,13 @@ impl<L: LayoutMode> CosmicEdit<L> {
         &mut self,
         logical_min_pos: Pos2,
         pixels_per_point: f32,
-        f: impl FnOnce(&mut Self, Rect)
+        f: impl FnOnce(&mut Self, Rect),
     ) {
         let cursor = self.editor.cursor();
-        let cursor_rect = self.editor.with_buffer(|x| {
-            cursor_rect(x, cursor)
-        });
+        let cursor_rect = self.editor.with_buffer(|x| cursor_rect(x, cursor));
 
         if let Some(cursor_rect) = cursor_rect {
-            let cursor_rect = (cursor_rect / pixels_per_point)
-                .translate(logical_min_pos.to_vec2());
+            let cursor_rect = (cursor_rect / pixels_per_point).translate(logical_min_pos.to_vec2());
 
             f(self, cursor_rect)
         }
@@ -1158,13 +1154,13 @@ impl<L: LayoutMode> CosmicEdit<L> {
         self.apply_to_cursor_rect(logical_min_pos, pixels_per_point, |editor, cursor_rect| {
             // Probably shouldn't render the cursor if it isn't in view.
             // Shouldn't matter much, it'll be clipped, etc.
-            let cursor_rect = painter.round_rect_to_pixels(cursor_rect);
-            editor.cursor_style
+            editor
+                .cursor_style
                 .with_texture(ctx, editor.line_height(), |cursor_texture| {
                     let cursor_texture_id = cursor_texture.texture_id();
                     painter.image(
                         cursor_texture_id,
-                        cursor_rect,
+                        cursor_rect.round_to_pixels(painter.pixels_per_point()),
                         Rect::from_two_pos(Pos2::ZERO, pos2(1.0, 1.0)),
                         Color32::WHITE,
                     );
